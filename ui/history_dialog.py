@@ -208,7 +208,9 @@ class HistoryDialog(QDialog):
 
         # Friendly HTML preview instead of a plain text dump.
         fault_list = (result or {}).get("faults", []) if isinstance(result, dict) else []
-        hardware_faults = sum(1 for f in fault_list if isinstance(f, dict) and f.get("hardware")) if isinstance(fault_list, list) else 0
+        hardware_faults = len(
+            [f for f in fault_list if isinstance(f, dict) and f.get("hardware")]
+        ) if isinstance(fault_list, list) else 0
         cards = [
             ("Overall severity", html.escape(severity)),
             ("Issues detected", str(count)),

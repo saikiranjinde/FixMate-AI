@@ -955,11 +955,11 @@ class SystemInformationPanel(QFrame):
         used = info.get("ram_used_gb")
         available = info.get("ram_available_gb")
         usage = info.get("ram_usage_percent")
+        free_mem = info.get("ram_free_gb")
         memory_value = (
             f"{free_mem:.2f} GB free" if isinstance(free_mem, (int, float))
             else (f"{usage:.1f}% used" if isinstance(usage, (int, float)) else "Ready")
         )
-        free_mem = info.get("ram_free_gb")
         memory_details = [
             ("Total RAM", f"{total:.2f} GB" if isinstance(total, (int, float)) else "Unknown"),
             ("Used RAM", f"{used:.2f} GB" if isinstance(used, (int, float)) else "Unknown"),
@@ -1949,25 +1949,32 @@ class MainWindow(QMainWindow):
     # ============================================================
 
     def start_scan(self) -> None:
+        # While a diagnosis is running, the same button acts as Cancel.
         if (
             self.scan_manager.worker is not None
             and self.scan_manager.worker.isRunning()
         ):
+            self._cancel_diagnosis()
             return
 
-        # Show a clear pre-scan note before any diagnostic subprocesses start.
-        # The user must explicitly acknowledge the message before the scan begins.
+        # Explain the expected Command Prompt / PowerShell windows before
+        # starting any diagnostic commands.
         note = QMessageBox(self)
         note.setIcon(QMessageBox.Icon.Information)
         note.setWindowTitle("Before Diagnosis Starts")
-        note.setText("FixMate-AI may briefly open and close Command Prompt or PowerShell windows during diagnosis.")
-        note.setInformativeText(
-            "This is normal. Some Windows diagnostic commands and system checks "
-            "run through the command line in the background. Please do not close "
-            "those windows manually; the application will continue the diagnosis "
-            "automatically."
+        note.setText(
+            "Command Prompt or PowerShell windows may briefly open and close "
+            "during diagnosis."
         )
-        start_btn = note.addButton("Start Diagnosis", QMessageBox.ButtonRole.AcceptRole)
+        note.setInformativeText(
+            "This is normal. Some Windows diagnostic checks run through command-line "
+            "tools. Please ignore those brief windows and do not close them manually. "
+            "FixMate-AI will continue the diagnosis automatically."
+        )
+        start_btn = note.addButton(
+            "Start Diagnosis",
+            QMessageBox.ButtonRole.AcceptRole,
+        )
         note.addButton("Cancel", QMessageBox.ButtonRole.RejectRole)
         note.exec()
 
@@ -1976,6 +1983,9 @@ class MainWindow(QMainWindow):
 
         # A new scan supersedes any previous result/AI context.
         self.last_scan_result = None
+        self.completed_scan_stages = []
+        self.cancelled_scan = False
+        self.current_scan_stage = None
         self._prepare_diagnostic_finding_placeholders()
         if not self.scan_manager.start():
             return
@@ -1994,6 +2004,8 @@ class MainWindow(QMainWindow):
         self.progress.setValue(0)
         self.percent_label.setText("0%")
         self.scan_status.setText("Diagnosis in progress — 0%")
+        self.start_button.setText("Cancel Diagnosis")
+        self.start_button.setEnabled(True)
         self.scan_panel.set_status("Running")
         self.scan_panel.set_loading(True)
         self._set_scan_visual_mode("system")
@@ -2003,8 +2015,10 @@ class MainWindow(QMainWindow):
         self.eta_label.setText("Estimated time: Calculating...")
         self.result_label.clear()
 
-        self.start_button.setText("Diagnosis Running...")
-        self.start_button.setEnabled(False)
+        # Keep the main action available as a Cancel control while the
+        # diagnosis worker is running.
+        self.start_button.setText("Cancel Diagnosis")
+        self.start_button.setEnabled(True)
 
         # A new scan invalidates the previous AI analysis. AI must be
         # started explicitly by the user after this scan finishes.
@@ -2079,6 +2093,42 @@ class MainWindow(QMainWindow):
             self.scan_panel.set_status(f"{value}%")
             self._mark_diagnostic_stage_progress(message)
 
+            # Safety net: if the worker advances directly over a milestone,
+            # mark every earlier diagnostic phase as completed rather than
+            # incorrectly showing it as cancelled later.
+            milestones = (
+                (8, "System Information"),
+                (16, "Hardware"),
+                (24, "System Resources"),
+                (32, "Process Analysis"),
+                (42, "GPU Diagnostics"),
+                (50, "Thermal Diagnostics"),
+                (60, "Storage Diagnostics"),
+                (70, "Battery Diagnosis"),
+                (78, "Driver Diagnostics"),
+                (84, "Network Diagnostics"),
+                (90, "Windows Health"),
+                (94, "Startup Diagnostics"),
+            )
+            for milestone, title in milestones:
+                if value >= milestone and title not in self.completed_scan_stages:
+                    panel = self.diagnosis_finding_panels.get(title)
+                    if panel is not None:
+                        # Do not overwrite an actively checking stage.
+                        current = self.current_scan_stage
+                        if current != title:
+                            panel.set_status("Completed")
+                            panel.set_result(
+                                f"{title} completed before cancellation/checkpoint.",
+                                "COMPLETED",
+                                "This diagnostic stage completed before a later progress milestone.",
+                                "Detailed evidence is finalized and displayed when the full scan completes.",
+                                "Run the full diagnosis to generate the final detailed evidence summary.",
+                                "Completed",
+                            )
+                    if current != title:
+                        self.completed_scan_stages.append(title)
+
         self._update_eta()
 
 
@@ -2086,7 +2136,7 @@ class MainWindow(QMainWindow):
         text = str(message).lower()
         mapping = (
             ("system information", "System Information"),
-            ("hardware", "Hardware"),
+            ("hardware", "Hardware Diagnostics"),
             ("resource", "System Resources"),
             ("process", "Process Analysis"),
             ("gpu", "GPU Diagnostics"),
@@ -2101,26 +2151,54 @@ class MainWindow(QMainWindow):
         current_title = next((title for keyword, title in mapping if keyword in text), None)
         if not current_title:
             return
+
+        # When a progress message jumps over one or more phases, treat the
+        # skipped earlier phases as completed. This is important because some
+        # hardware/system checks can finish too quickly to produce a separate
+        # GUI progress signal even though the diagnostic function actually ran.
         order = [title for _, title in mapping]
         current_index = order.index(current_title)
-        for idx, title in enumerate(order):
-            panel = self.diagnosis_finding_panels.get(title)
-            if panel is None:
-                continue
-            if idx < current_index:
-                panel.set_status("Completed")
-                panel.summary_label.setText(f"{title} check completed — waiting for final evidence summary")
-            elif idx == current_index:
-                panel.set_status("Checking")
-                panel.set_result(
-                    f"Checking {title.lower()}…",
-                    "PENDING",
-                    "The diagnostic engine is currently collecting evidence.",
-                    f"Current scan stage: {message}",
-                    "No corrective action until this check completes.",
-                    "Checking",
+        previous_index = order.index(self.current_scan_stage) if self.current_scan_stage in order else -1
+
+        for idx in range(previous_index + 1, current_index):
+            skipped_title = order[idx]
+            skipped_panel = self.diagnosis_finding_panels.get(skipped_title)
+            if skipped_panel is not None:
+                skipped_panel.set_status("Completed")
+                skipped_panel.set_result(
+                    f"{skipped_title} completed before the next diagnostic stage.",
+                    "COMPLETED",
+                    "The diagnostic stage finished before the next progress milestone was emitted.",
+                    "Final evidence is available after a complete scan; this stage did execute before the scan moved forward.",
+                    "Complete the diagnosis to view the full evidence summary.",
+                    "Completed",
                 )
-                break
+            if skipped_title not in self.completed_scan_stages:
+                self.completed_scan_stages.append(skipped_title)
+
+        # The previously active phase is complete when the scan advances.
+        if self.current_scan_stage and self.current_scan_stage != current_title:
+            previous = self.diagnosis_finding_panels.get(self.current_scan_stage)
+            if previous is not None:
+                previous.set_status("Completed")
+            if self.current_scan_stage not in self.completed_scan_stages:
+                self.completed_scan_stages.append(self.current_scan_stage)
+
+        self.current_scan_stage = current_title
+        panel = self.diagnosis_finding_panels.get(current_title)
+        if panel is not None:
+            panel.set_status("Checking")
+            panel.summary_label.setText(
+                f"{current_title} is currently being checked."
+            )
+            panel.set_result(
+                f"Checking {current_title.lower()}…",
+                "PENDING",
+                "The diagnostic engine is currently collecting evidence.",
+                f"Current scan stage: {message}",
+                "No corrective action until this check completes.",
+                "Checking",
+            )
 
     # ============================================================
     # SCAN VISUALS
@@ -2278,11 +2356,99 @@ class MainWindow(QMainWindow):
             f"Estimated time: {text}"
         )
 
+    def _cancel_diagnosis(self) -> None:
+        """Safely request cancellation without terminating the GUI/thread forcibly."""
+        worker = self.scan_manager.worker
+        if worker is None or not worker.isRunning():
+            self.start_button.setText("Run Full Diagnosis")
+            self.start_button.setEnabled(True)
+            return
+
+        reply = QMessageBox.question(
+            self,
+            "Cancel Diagnosis",
+            "Are you sure you want to cancel the current diagnosis?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
+        self.cancelled_scan = True
+        self.start_button.setText("Cancelling...")
+        self.start_button.setEnabled(False)
+        self.scan_status.setText("Stopping diagnosis safely...")
+        self.stage_label.setText("Current analysis: Cancelling diagnosis")
+
+        # Mark the currently active stage as canceled; anything before it has
+        # already been completed when the scan advanced to the current stage.
+        current = self.current_scan_stage
+        for title, panel in self.diagnosis_finding_panels.items():
+            if title in self.completed_scan_stages:
+                panel.set_status("Completed")
+                # Keep the information already gathered for this stage visible.
+                # If no final result was available, provide a truthful interim
+                # explanation instead of leaving a confusing PENDING state.
+                if panel._labels.get("severity") and panel._labels["severity"].text() in {"PENDING", "—"}:
+                    panel.set_result(
+                        f"{title} completed before the scan was cancelled.",
+                        "COMPLETED",
+                        "The stage executed before cancellation; the final aggregate evidence is only produced at the end of a complete scan.",
+                        "Partial diagnostic execution completed. No final fault summary was created because the overall scan was cancelled.",
+                        "Run the diagnosis again to generate the complete evidence and recommendation summary.",
+                        "Completed",
+                    )
+                continue
+            if title == current:
+                panel.set_status("Cancelled")
+                panel.summary_label.setText(f"{title} was cancelled before completion.")
+            else:
+                panel.set_status("Cancelled")
+                panel.summary_label.setText(f"{title} was not run because the diagnosis was cancelled.")
+
+        try:
+            worker.requestInterruption()
+        except Exception:
+            pass
+        try:
+            worker.quit()
+        except Exception:
+            pass
+
+        # Do not call wait() or terminate() here. The worker owns the scan and
+        # will finish/stop on its own; the GUI stays alive and responsive.
+        QTimer.singleShot(100, self._finish_cancel_ui)
+
+    def _finish_cancel_ui(self) -> None:
+        """Reset UI after a cancellation request without killing the app."""
+        try:
+            self.eta_timer.stop()
+        except Exception:
+            pass
+        self.scan_start_time = None
+        self.scan_status.setText("Diagnosis cancelled")
+        self.stage_label.setText("Current analysis: Diagnosis cancelled")
+        self.eta_label.setText("Estimated time: —")
+        self.start_button.setText("Run Full Diagnosis")
+        self.start_button.setEnabled(True)
+        try:
+            self.scan_panel.set_status("Cancelled")
+            self.scan_panel.set_loading(False)
+        except Exception:
+            pass
+        try:
+            self._set_scan_visual_mode("idle")
+        except Exception:
+            pass
+
     # ============================================================
     # FINISHED
     # ============================================================
 
     def _scan_finished(self, result) -> None:
+        if self.cancelled_scan:
+            self._finish_cancel_ui()
+            return
         self.eta_timer.stop()
 
         self.progress.setValue(100)
@@ -2311,6 +2477,11 @@ class MainWindow(QMainWindow):
             )
             return
 
+        if self.current_scan_stage and self.current_scan_stage not in self.completed_scan_stages:
+            panel = self.diagnosis_finding_panels.get(self.current_scan_stage)
+            if panel is not None:
+                panel.set_status("Completed")
+            self.completed_scan_stages.append(self.current_scan_stage)
         self._update_dashboard(result)
         self.last_scan_result = result
         self._populate_diagnostic_findings(result)
@@ -2331,6 +2502,9 @@ class MainWindow(QMainWindow):
                 f"    |    History save failed: {exc}"
             )
         self.scan_started_iso = None
+        self.completed_scan_stages = []
+        self.cancelled_scan = False
+        self.current_scan_stage = None
         self.ai_conversation = []
         has_key = bool(get_saved_api_key())
         self.ai_panel.set_status("Ready to analyze" if has_key else "AI not configured")
@@ -3286,6 +3460,9 @@ class MainWindow(QMainWindow):
     # ============================================================
 
     def _scan_failed(self, error_text: str) -> None:
+        if self.cancelled_scan:
+            self._finish_cancel_ui()
+            return
         self.eta_timer.stop()
         self.scan_start_time = None
 
