@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="FixMate-AI is a Windows PC diagnostic assistant for finding system problems and guiding you through fixes.">
+  <meta name="theme-color" content="#07111f">
+  <title>FixMate-AI — Windows PC Diagnostics</title>
+  <link rel="icon" href="assets/fixmate_logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <header class="topbar">
+    <a class="brand" href="#top" aria-label="FixMate-AI home">
+      <img src="assets/fixmate_logo.svg" alt="FixMate-AI logo">
+      <span>FixMate<span>-AI</span></span>
+    </a>
+    <nav>
+      <a href="#what">What is FixMate-AI?</a>
+      <a href="#how">How to use</a>
+      <a href="#future">Future scope</a>
+      <button class="nav-btn" data-open="helpModal">Help</button>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="pulse"></span> Windows PC Diagnostics • Version 1.0.0</div>
+        <h1>Diagnose today.<br><span>A better tomorrow.</span></h1>
+        <p class="lead">
+          FixMate-AI is a Windows desktop diagnostic assistant that checks your PC,
+          identifies issues, explains the evidence, and guides you through practical fixes.
+        </p>
+        <div class="hero-actions">
+          <a class="primary-btn download-btn" href="downloads/FixMate-AI.exe" download data-download>
+            <span class="download-icon">↓</span>
+            <span>Download FixMate-AI</span>
+          </a>
+          <button class="secondary-btn" data-scroll="#what">Learn more</button>
+        </div>
+        <div class="trust-row">
+          <span>Windows 10/11</span><span>Local diagnostics</span><span>Optional AI</span>
+        </div>
+      </div>
+      <div class="hero-card">
+        <div class="hero-card-header">
+          <div>
+            <small>FIXMATE-AI</small>
+            <strong>PC Health Overview</strong>
+          </div>
+          <span class="live-badge"><i></i> READY</span>
+        </div>
+        <div class="health-ring"><span>68</span><small>/100</small></div>
+        <div class="metric-grid">
+          <div><strong>0</strong><span>Hardware faults</span></div>
+          <div><strong>2</strong><span>Problems found</span></div>
+          <div><strong>1</strong><span>Warnings</span></div>
+          <div><strong>10+</strong><span>Diagnostic checks</span></div>
+        </div>
+        <div class="mini-log">
+          <div><span class="dot ok"></span> Storage health checked</div>
+          <div><span class="dot ok"></span> GPU diagnostics complete</div>
+          <div><span class="dot warn"></span> Driver issue detected</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="what" class="section">
+      <div class="section-heading">
+        <span class="eyebrow">01 · OVERVIEW</span>
+        <h2>What is FixMate-AI?</h2>
+        <p>One place to understand what is happening on your Windows PC.</p>
+      </div>
+      <div class="cards three">
+        <article class="info-card">
+          <span class="card-icon">⌁</span>
+          <h3>Diagnose</h3>
+          <p>Runs a structured Windows PC health check across hardware, resources, storage, battery, GPU, drivers, network, startup and Windows health.</p>
+        </article>
+        <article class="info-card">
+          <span class="card-icon">◈</span>
+          <h3>Understand</h3>
+          <p>Turns technical findings into readable evidence, severity, likely causes and practical next steps.</p>
+        </article>
+        <article class="info-card">
+          <span class="card-icon">✦</span>
+          <h3>Fix</h3>
+          <p>Optional FixMate AI analysis can explain detected issues in simple language and guide you step-by-step.</p>
+        </article>
+      </div>
+      <div class="feature-strip">
+        <div><strong>System scan</strong><span>CPU • RAM • GPU • Storage</span></div>
+        <div><strong>Health signals</strong><span>Thermal • Battery • Network</span></div>
+        <div><strong>Software checks</strong><span>Drivers • Windows • Startup</span></div>
+        <div><strong>Reports</strong><span>History • HTML reports</span></div>
+      </div>
+    </section>
+
+    <section class="section split">
+      <div class="panel dark-panel">
+        <span class="eyebrow">02 · WHY IT'S USEFUL</span>
+        <h2>Know the problem before you try random fixes.</h2>
+        <p>FixMate-AI separates deterministic diagnostics from optional AI explanation, so you can see the evidence behind a result and act with more confidence.</p>
+        <div class="check-list">
+          <div><span>✓</span> Helps identify common PC problems</div>
+          <div><span>✓</span> Shows severity and supporting evidence</div>
+          <div><span>✓</span> Saves diagnosis history and reports locally</div>
+          <div><span>✓</span> Optional AI assistance when you need simpler explanations</div>
+        </div>
+      </div>
+      <div class="panel command-panel">
+        <div class="terminal-head"><span></span><span></span><span></span><b>FixMate-AI · Diagnosis</b></div>
+        <pre><code>CHECKING HARDWARE...
+✓ CPU
+✓ MEMORY
+✓ GPU
+✓ STORAGE
+
+DRIVER DIAGNOSTICS
+⚠ Problem Code 10 detected
+
+RECOMMENDATION
+1. Open Device Manager
+2. Re-enable the device
+3. Reinstall compatible driver
+4. Run diagnosis again</code></pre>
+      </div>
+    </section>
+
+    <section id="how" class="section">
+      <div class="section-heading">
+        <span class="eyebrow">03 · GET STARTED</span>
+        <h2>How to download and use</h2>
+        <p>Install once, then run diagnostics whenever your PC starts acting unusual.</p>
+      </div>
+      <div class="steps">
+        <article class="step"><b>01</b><h3>Download</h3><p>Press the download button and save the FixMate-AI executable to your Windows PC.</p></article>
+        <article class="step"><b>02</b><h3>Install / Run</h3><p>Open the downloaded executable. Windows may ask you to confirm the application before launch.</p></article>
+        <article class="step"><b>03</b><h3>Check your PC</h3><p>Use the Dashboard to see system information, then open Run Diagnosis and start a full scan.</p></article>
+        <article class="step"><b>04</b><h3>Review & fix</h3><p>Expand diagnostic findings, review the evidence and recommendations, and save the generated report.</p></article>
+      </div>
+      <div class="tip-box">
+        <strong>AI is optional.</strong>
+        <span>You can use the normal FixMate-AI diagnostics without an OpenRouter API key. Add a key only when you want AI explanations.</span>
+      </div>
+    </section>
+
+    <section id="future" class="section">
+      <div class="section-heading">
+        <span class="eyebrow">04 · FUTURE SCOPE</span>
+        <h2>Where FixMate-AI can go next</h2>
+      </div>
+      <div class="future-grid">
+        <div><span>01</span><h3>Remote Diagnostics</h3><p>Securely diagnose another Windows PC from the main FixMate-AI application.</p></div>
+        <div><span>02</span><h3>Smarter AI Assistance</h3><p>More contextual explanations and guided troubleshooting while keeping diagnostic evidence authoritative.</p></div>
+        <div><span>03</span><h3>Health Trends</h3><p>Compare previous scans to spot recurring or degrading system conditions.</p></div>
+        <div><span>04</span><h3>Portable Deployment</h3><p>Simpler installation and distribution for technicians, students and everyday users.</p></div>
+      </div>
+    </section>
+
+    <section class="section download-section">
+      <div>
+        <span class="eyebrow">READY WHEN YOU ARE</span>
+        <h2>Give your PC a proper check.</h2>
+        <p>Download FixMate-AI and start with a local diagnostic scan.</p>
+      </div>
+      <a class="primary-btn download-btn" href="downloads/FixMate-AI.exe" download data-download>
+        <span class="download-icon">↓</span> Download FixMate-AI
+      </a>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-brand"><img src="assets/fixmate_logo.svg" alt=""><span>FixMate-AI</span></div>
+    <div class="footer-meta">
+      <span>Version 1.0.0</span>
+      <button data-open="aboutModal">About us</button>
+      <button data-open="helpModal">Help</button>
+    </div>
+    <p>© <span id="year"></span> FixMate-AI · Created by Saikiran Jinde</p>
+  </footer>
+
+  <!-- Help Modal -->
+  <dialog id="helpModal" class="modal">
+    <div class="modal-head"><div><span class="eyebrow">HELP CENTER</span><h2>Install, API keys & errors</h2></div><button class="close" data-close>×</button></div>
+    <div class="help-tabs">
+      <button class="tab active" data-tab="install">Install & Use</button>
+      <button class="tab" data-tab="api">OpenRouter API Key</button>
+      <button class="tab" data-tab="errors">Common Errors</button>
+    </div>
+    <div class="tab-panel active" data-panel="install">
+      <ol class="modal-steps">
+        <li><b>Download FixMate-AI.exe</b><span>Save it somewhere easy to access, such as Downloads.</span></li>
+        <li><b>Run the application</b><span>Open the EXE and complete the Windows security prompt if shown.</span></li>
+        <li><b>Run Diagnosis</b><span>Open Run Diagnosis, start a full scan, review the expandable findings, and save the report.</span></li>
+      </ol>
+    </div>
+    <div class="tab-panel" data-panel="api">
+      <div class="api-guide">
+        <p><b>1.</b> Sign in to OpenRouter.</p>
+        <p><b>2.</b> Open the API Keys page.</p>
+        <p><b>3.</b> Create a new API key and copy it.</p>
+        <p><b>4.</b> In FixMate-AI, open AI Settings, paste the key, test the connection, then start AI analysis.</p>
+        <a class="secondary-btn" href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener">Open OpenRouter API Keys ↗</a>
+        <small>Never share your API key publicly.</small>
+      </div>
+    </div>
+    <div class="tab-panel" data-panel="errors">
+      <div class="error-list">
+        <div><b>AI not configured</b><span>No OpenRouter key is saved. Local diagnostics still work normally.</span></div>
+        <div><b>API connection failed</b><span>Check the key, model availability, internet connection and OpenRouter status.</span></div>
+        <div><b>Report not opening</b><span>Use the Reports section in FixMate-AI and verify the local report was generated.</span></div>
+        <div><b>Windows hardware sensor unavailable</b><span>Some Windows sensors are not exposed through standard APIs; an unavailable sensor does not automatically mean hardware failure.</span></div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- About Modal -->
+  <dialog id="aboutModal" class="modal">
+    <div class="modal-head"><div><span class="eyebrow">ABOUT FIXMATE-AI</span><h2>Built to make PC diagnostics easier.</h2></div><button class="close" data-close>×</button></div>
+    <div class="about-card"><img src="assets/fixmate_logo.svg" alt=""><div><h3>FixMate-AI</h3><p>Windows PC diagnostics and guided troubleshooting.</p><div class="about-row"><span>Created by</span><strong>Saikiran Jinde</strong></div><div class="about-row"><span>Email</span><strong>saikiranjinde49@gmail.com</strong></div><div class="about-row"><span>Version</span><strong>1.0.0</strong></div></div></div>
+  </dialog>
+
+  <!-- Thank-you popup -->
+  <div class="toast" id="downloadToast" role="status" aria-live="polite">
+    <div class="toast-loader"></div>
+    <div><strong>Thank you for downloading FixMate-AI!</strong><span>Your download should start automatically.</span></div>
+    <button data-dismiss-toast>×</button>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
