@@ -956,7 +956,8 @@ class SystemInformationPanel(QFrame):
         available = info.get("ram_available_gb")
         usage = info.get("ram_usage_percent")
         memory_value = (
-            f"{usage:.1f}% used" if isinstance(usage, (int, float)) else "Ready"
+            f"{free_mem:.2f} GB free" if isinstance(free_mem, (int, float))
+            else (f"{usage:.1f}% used" if isinstance(usage, (int, float)) else "Ready")
         )
         free_mem = info.get("ram_free_gb")
         memory_details = [
@@ -1953,6 +1954,26 @@ class MainWindow(QMainWindow):
             and self.scan_manager.worker.isRunning()
         ):
             return
+
+        # Show a clear pre-scan note before any diagnostic subprocesses start.
+        # The user must explicitly acknowledge the message before the scan begins.
+        note = QMessageBox(self)
+        note.setIcon(QMessageBox.Icon.Information)
+        note.setWindowTitle("Before Diagnosis Starts")
+        note.setText("FixMate-AI may briefly open and close Command Prompt or PowerShell windows during diagnosis.")
+        note.setInformativeText(
+            "This is normal. Some Windows diagnostic commands and system checks "
+            "run through the command line in the background. Please do not close "
+            "those windows manually; the application will continue the diagnosis "
+            "automatically."
+        )
+        start_btn = note.addButton("Start Diagnosis", QMessageBox.ButtonRole.AcceptRole)
+        note.addButton("Cancel", QMessageBox.ButtonRole.RejectRole)
+        note.exec()
+
+        if note.clickedButton() is not start_btn:
+            return
+
         # A new scan supersedes any previous result/AI context.
         self.last_scan_result = None
         self._prepare_diagnostic_finding_placeholders()
