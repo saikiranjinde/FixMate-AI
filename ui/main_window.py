@@ -29,7 +29,7 @@ from PySide6.QtCore import (
     Signal,
     QThread,
 )
-from PySide6.QtGui import QColor, QFont, QDesktopServices, QPixmap
+from PySide6.QtGui import QColor, QFont, QDesktopServices, QPixmap, QPainter, QPen, QLinearGradient
 from PySide6.QtWidgets import (
     QFrame,
     QLineEdit,
@@ -38,6 +38,7 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QComboBox,
     QGraphicsDropShadowEffect,
+    QGraphicsOpacityEffect,
     QHBoxLayout,
     QLabel,
     QListWidget,
@@ -73,6 +74,133 @@ from ai.openrouter_client import (
 )
 from ui.animations import fade_in
 from ui.theme import DARK_QSS, LIGHT_QSS, load_theme, save_theme
+
+class CircularScoreWidget(QWidget):
+    """Animated circular 0-100 score ring."""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFixedSize(118, 118)
+        self._score = None
+
+    def set_score(self, score):
+        self._score = None if score is None else max(0.0, min(100.0, float(score)))
+        self.update()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        rect = self.rect().adjusted(9, 9, -9, -9)
+
+        track = QPen(QColor("#16324D"), 10)
+        track.setCapStyle(Qt.PenCapStyle.RoundCap)
+        painter.setPen(track)
+        painter.drawArc(rect, 90 * 16, -360 * 16)
+
+        if self._score is not None:
+            gradient = QLinearGradient(rect.topLeft(), rect.bottomRight())
+            gradient.setColorAt(0.0, QColor("#20D9FF"))
+            gradient.setColorAt(0.52, QColor("#398CFF"))
+            gradient.setColorAt(1.0, QColor("#7C5CFF"))
+            ring = QPen(gradient, 10)
+            ring.setCapStyle(Qt.PenCapStyle.RoundCap)
+            painter.setPen(ring)
+            span = int(-360 * 16 * (self._score / 100.0))
+            painter.drawArc(rect, 90 * 16, span)
+
+        painter.setPen(QColor("#EEF8FF"))
+        painter.setFont(QFont("Aptos", 22, QFont.Weight.Bold))
+        value = "—" if self._score is None else str(int(round(self._score)))
+        box = painter.fontMetrics().boundingRect(value)
+        painter.drawText((self.width()-box.width())//2, (self.height()+box.height())//2-5, value)
+        if self._score is not None:
+            painter.setPen(QColor("#7E98B0"))
+            painter.setFont(QFont("Aptos", 8))
+            painter.drawText(44, 98, "/ 100")
+
+
+class CircularHealthCard(QFrame):
+    """Score card with a smooth sweep animation."""
+    def __init__(self, title="System Health", parent=None):
+        super().__init__(parent)
+        self.setObjectName("healthScoreCard")
+        self.setStyleSheet("""
+            QFrame#healthScoreCard {
+                border: 1px solid rgba(56, 190, 255, 0.20);
+                border-radius: 18px;
+                background: qlineargradient(x1:0,y1:0,x2:1,y2:0, stop:0 rgba(12,31,53,245), stop:1 rgba(7,18,31,245));
+            }
+            QLabel#healthScoreTitle { color: #8bc8f0; font-size: 11px; font-weight: 800; }
+            QLabel#healthScoreStatus { color: #20d9ff; font-size: 17px; font-weight: 900; }
+        """)
+        self._target = 0.0
+        self._current = 0.0
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(16, 12, 16, 12)
+        layout.setSpacing(15)
+
+        self.ring = CircularScoreWidget(self)
+        layout.addWidget(self.ring)
+
+        details = QVBoxLayout()
+        details.setSpacing(2)
+        self.title_label = QLabel(title)
+        self.title_label.setObjectName("healthScoreTitle")
+        details.addWidget(self.title_label)
+
+        self.status_label = QLabel("WAITING")
+        self.status_label.setObjectName("healthScoreStatus")
+        details.addWidget(self.status_label)
+
+        self.detail_label = QLabel("Run a diagnosis to calculate the health score.")
+        self.detail_label.setObjectName("muted")
+        self.detail_label.setWordWrap(True)
+        details.addWidget(self.detail_label)
+        details.addStretch()
+        layout.addLayout(details, 1)
+
+        self.anim_timer = QTimer(self)
+        self.anim_timer.setInterval(16)
+        self.anim_timer.timeout.connect(self._tick)
+
+        self._glow = QGraphicsDropShadowEffect(self)
+        self._glow.setOffset(0, 0)
+        self._glow.setBlurRadius(0)
+        self._glow.setColor(QColor(32, 217, 255, 150))
+        self.setGraphicsEffect(self._glow)
+
+        self._glow_anim = QPropertyAnimation(self._glow, b"blurRadius", self)
+        self._glow_anim.setDuration(520)
+        self._glow_anim.setKeyValueAt(0.0, 0)
+        self._glow_anim.setKeyValueAt(0.35, 26)
+        self._glow_anim.setKeyValueAt(1.0, 0)
+        self._glow_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+
+    def set_waiting(self, detail="Run a diagnosis to calculate the health score."):
+        self.anim_timer.stop()
+        self._current = 0.0
+        self._target = 0.0
+        self.ring.set_score(None)
+        self.status_label.setText("WAITING")
+        self.detail_label.setText(detail)
+
+    def set_result(self, score, status, detail):
+        self._target = max(0.0, min(100.0, float(score)))
+        self.status_label.setText(str(status).upper())
+        self.detail_label.setText(str(detail))
+        self._glow_anim.stop()
+        self._glow_anim.start()
+        self.anim_timer.start()
+
+    def _tick(self):
+        delta = self._target - self._current
+        if abs(delta) < 0.2:
+            self._current = self._target
+            self.anim_timer.stop()
+        else:
+            # Smooth ease-out style movement toward the final value.
+            self._current += delta * 0.14
+        self.ring.set_score(self._current)
 
 
 class AIWorker(QThread):
@@ -1072,6 +1200,7 @@ class MainWindow(QMainWindow):
 
         self._build_ui()
         self.apply_theme(self.current_theme)
+        self.dashboard_health_card.set_waiting()
 
         # Fetch a lightweight system snapshot as soon as the application opens.
         # This is informational only; it does not start the diagnostic engine.
@@ -1182,6 +1311,8 @@ class MainWindow(QMainWindow):
         self._system_info_shadow.setColor(QColor(0, 0, 0, 75))
         self.system_information_panel.setGraphicsEffect(self._system_info_shadow)
         content_layout.addWidget(self.system_information_panel)
+        self.dashboard_health_card = CircularHealthCard("System Health")
+        content_layout.addWidget(self.dashboard_health_card)
 
         # --------------------------------------------------------
         # RECENT HISTORY (Dashboard)
@@ -1438,6 +1569,7 @@ class MainWindow(QMainWindow):
                 "System information, live hardware details and recent diagnosis history."
             )
             self._refresh_dashboard_history()
+        self._animate_view_change()
 
     def _load_initial_system_information(self) -> None:
         """Start a non-diagnostic startup information fetch."""
@@ -1581,11 +1713,25 @@ class MainWindow(QMainWindow):
         bt.setObjectName("sectionTitle")
         bp.addWidget(bt)
         bp.addWidget(QLabel("FixMate-AI — Windows PC diagnostics and AI-assisted troubleshooting."))
-        bp.addWidget(QLabel("Version 0.6 • Secure • Stable • Optimized"))
+        bp.addWidget(QLabel("Version 1.0.0 • Secure • Stable • Optimized"))
+        website_label = QLabel("Website: ai-fixmate-fx.web.app")
+        website_label.setObjectName("muted")
+        bp.addWidget(website_label)
         about_row = QHBoxLayout()
         about_btn = QPushButton("About")
         about_btn.clicked.connect(lambda: self._show_about())
         about_row.addWidget(about_btn)
+
+        more_info_btn = QPushButton("More Info")
+        more_info_btn.setObjectName("secondaryButton")
+        more_info_btn.setToolTip("Open the FixMate-AI website")
+        more_info_btn.clicked.connect(
+            lambda: QDesktopServices.openUrl(
+                QUrl("https://ai-fixmate-fx.web.app")
+            )
+        )
+        about_row.addWidget(more_info_btn)
+
         close_btn = QPushButton("Close")
         close_btn.clicked.connect(dialog.accept)
         about_row.addStretch()
@@ -1755,6 +1901,22 @@ class MainWindow(QMainWindow):
         # forces another panel to close.
         return
 
+    def _animate_view_change(self):
+        if not hasattr(self, "stack"):
+            return
+        effect = self.stack.graphicsEffect()
+        if not isinstance(effect, QGraphicsOpacityEffect):
+            effect = QGraphicsOpacityEffect(self.stack)
+            self.stack.setGraphicsEffect(effect)
+        effect.setOpacity(0.45)
+        anim = QPropertyAnimation(effect, b"opacity", self.stack)
+        anim.setDuration(220)
+        anim.setStartValue(0.45)
+        anim.setEndValue(1.0)
+        anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self._view_change_animation = anim
+        anim.start()
+
     # ============================================================
     # THEME
     # ============================================================
@@ -1919,6 +2081,14 @@ class MainWindow(QMainWindow):
             QLabel#brandTagline { color: #477ea8; }
             QProgressBar { background: #e6eef6; }
             """
+        base_qss += """
+        QFrame#healthScoreCard:hover {
+            border: 1px solid rgba(32,217,255,.42);
+        }
+        QPushButton:pressed {
+            padding-top: 11px;
+        }
+        """
         self.setStyleSheet(base_qss + accent_qss)
 
         self.theme_button.setText(
@@ -3140,6 +3310,24 @@ class MainWindow(QMainWindow):
     # DASHBOARD RESULT
     # ============================================================
 
+    @staticmethod
+    def _calculate_health_score(faults: list, overall: str) -> tuple[int, str, str]:
+        """Create a simple transparent presentation score from deterministic findings."""
+        penalties = {"CRITICAL": 35, "HIGH": 22, "MODERATE": 12, "LOW": 4, "WARNING": 4}
+        score = 100
+        for fault in faults:
+            if isinstance(fault, dict):
+                score -= penalties.get(str(fault.get("severity", "")).upper(), 0)
+        score = max(0, min(100, score))
+        overall_upper = str(overall or "").upper()
+        if overall_upper == "CRITICAL" or score < 50:
+            return score, "CRITICAL", "Critical findings require immediate attention."
+        if overall_upper == "HIGH" or score < 75:
+            return score, "NEEDS ATTENTION", "Significant findings were detected. Review the highlighted checks."
+        if faults:
+            return score, "GOOD • MINOR ISSUES", "The system is broadly healthy with some lower-priority findings."
+        return score, "HEALTHY", "No diagnostic faults were reported."
+
     def _update_dashboard(self, result: dict) -> None:
         # The dashboard information panel is intentionally information-only.
         # Refresh it from the latest structured scan snapshot when available.
@@ -3163,8 +3351,10 @@ class MainWindow(QMainWindow):
         self.problem_count_value.setText(str(critical_high))
         self.warning_count_value.setText(str(warnings))
         self.hardware_fault_value.setText(str(hardware_faults))
+        health_score, health_status, health_detail = self._calculate_health_score(faults, overall)
+        self.dashboard_health_card.set_result(health_score, health_status, health_detail)
         self.result_label.setText(
-            f"Overall diagnostic status: {overall}    |    Issues detected: {issue_count}"
+            f"Overall diagnostic status: {overall}    |    Health score: {health_score}/100    |    Issues detected: {issue_count}"
         )
 
     # ============================================================
