@@ -37,26 +37,46 @@ $$(".tab").forEach(tab => {
 });
 
 let toastTimer;
+let pendingDownloadLink = null;
+
+function showDownloadToast(){
+  const toast = $("#downloadToast");
+  toast.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove("show"), 7000);
+}
+
+function startDownload(link){
+  const original = link.dataset.originalHtml || link.innerHTML;
+  link.dataset.originalHtml = original;
+  link.innerHTML = '<span class="toast-loader" style="width:16px;height:16px;border-width:2px"></span><span>Starting download…</span>';
+  link.style.pointerEvents = "none";
+  showDownloadToast();
+
+  setTimeout(() => {
+    link.innerHTML = original;
+    link.style.pointerEvents = "";
+    window.location.href = link.href;
+  }, 250);
+}
+
+const windowsWarningModal = $("#windowsWarningModal");
+const continueDownload = $("#continueDownload");
+
 $$("[data-download]").forEach(link => {
-  link.addEventListener("click", () => {
-    const toast = $("#downloadToast");
-    toast.classList.add("show");
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast.classList.remove("show"), 7000);
+  link.addEventListener("click", e => {
+    e.preventDefault();
+    pendingDownloadLink = link;
+    openDialog("windowsWarningModal");
   });
+});
+
+continueDownload?.addEventListener("click", () => {
+  const link = pendingDownloadLink;
+  pendingDownloadLink = null;
+  closeDialog(windowsWarningModal);
+  if (link) startDownload(link);
 });
 
 $("[data-dismiss-toast]").addEventListener("click", () => $("#downloadToast").classList.remove("show"));
 
-// Small loading state on download buttons. The download itself remains native browser behavior.
-$$("[data-download]").forEach(link => {
-  link.addEventListener("click", () => {
-    const original = link.innerHTML;
-    link.innerHTML = '<span class="toast-loader" style="width:16px;height:16px;border-width:2px"></span><span>Starting download…</span>';
-    link.style.pointerEvents = "none";
-    setTimeout(() => {
-      link.innerHTML = original;
-      link.style.pointerEvents = "";
-    }, 1800);
-  });
-});

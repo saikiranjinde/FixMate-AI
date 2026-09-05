@@ -34,7 +34,7 @@
           identifies issues, explains the evidence, and guides you through practical fixes.
         </p>
         <div class="hero-actions">
-          <a class="primary-btn download-btn" href="https://github.com/saikiranjinde/FixMate-AI/releases/download/v1.0.0/FixMate-AI.exe" download data-download>
+          <a class="primary-btn download-btn" href="https://github.com/saikiranjinde/FixMate-AI/releases/download/v1.0.0/FixMate-AI.exe" data-download>
             <span class="download-icon">↓</span>
             <span>Download FixMate-AI</span>
           </a>
@@ -166,7 +166,7 @@ RECOMMENDATION
         <h2>Give your PC a proper check.</h2>
         <p>Download FixMate-AI and start with a local diagnostic scan.</p>
       </div>
-      <a class="primary-btn download-btn" href="downloads/FixMate-AI.exe" download data-download>
+      <a class="primary-btn download-btn" href="https://github.com/saikiranjinde/FixMate-AI/releases/download/v1.0.0/FixMate-AI.exe" data-download>
         <span class="download-icon">↓</span> Download FixMate-AI
       </a>
     </section>
@@ -221,6 +221,38 @@ RECOMMENDATION
   <dialog id="aboutModal" class="modal">
     <div class="modal-head"><div><span class="eyebrow">ABOUT FIXMATE-AI</span><h2>Built to make PC diagnostics easier.</h2></div><button class="close" data-close>×</button></div>
     <div class="about-card"><img src="assets/fixmate_logo.svg" alt=""><div><h3>FixMate-AI</h3><p>Windows PC diagnostics and guided troubleshooting.</p><div class="about-row"><span>Created by</span><strong>Saikiran Jinde</strong></div><div class="about-row"><span>Email</span><strong>saikiranjinde49@gmail.com</strong></div><div class="about-row"><span>Version</span><strong>1.0.0</strong></div></div></div>
+  </dialog>
+
+  <!-- Windows SmartScreen guidance modal -->
+  <dialog id="windowsWarningModal" class="modal windows-warning-modal">
+    <div class="modal-head">
+      <div><span class="eyebrow">WINDOWS DOWNLOAD NOTE</span><h2>A Windows security warning may appear</h2></div>
+      <button class="close" data-close>×</button>
+    </div>
+    <div class="warning-body">
+      <div class="warning-callout">
+        <div class="warning-icon">!</div>
+        <div>
+          <strong>“Windows protected your PC”</strong>
+          <p>Because FixMate-AI v1.0.0 is not digitally signed yet, Windows SmartScreen may show a warning before the app opens.</p>
+        </div>
+      </div>
+
+      <div class="warning-steps">
+        <div class="warning-step"><b>1</b><div><strong>Open the downloaded file</strong><span>After the download completes, double-click <code>FixMate-AI.exe</code>.</span></div></div>
+        <div class="warning-step"><b>2</b><div><strong>Click “More info”</strong><span>On the blue Windows SmartScreen window, select <em>More info</em> to reveal the app details.</span></div></div>
+        <div class="warning-step"><b>3</b><div><strong>Click “Run anyway”</strong><span>Select <em>Run anyway</em> only when you downloaded FixMate-AI from this official website or the official FixMate-AI GitHub release.</span></div></div>
+      </div>
+
+      <div class="warning-safety">
+        <strong>Safety check:</strong> Do not use “Run anyway” for an EXE from an unknown or modified source.
+      </div>
+
+      <div class="warning-actions">
+        <button class="secondary-btn" data-close>Cancel</button>
+        <button class="primary-btn" id="continueDownload">Continue to Download <span>↗</span></button>
+      </div>
+    </div>
   </dialog>
 
   <!-- Thank-you popup -->
