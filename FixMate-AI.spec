@@ -1,28 +1,29 @@
 # -*- mode: python ; coding: utf-8 -*-
+"""
+FixMate-AI PyInstaller spec
+Packaging fix: explicitly bundle psutil and its Windows extension modules.
+"""
+
 from pathlib import Path
-from PyInstaller.utils.hooks import collect_submodules
+from PyInstaller.utils.hooks import collect_submodules, collect_data_files
 
-project = Path(SPEC).parent
+project_root = Path(SPECPATH)
+assets_dir = project_root / "assets"
 
-hiddenimports = []
-for pkg in ("ai", "core", "diagnosis", "storage", "ui"):
-    try:
-        hiddenimports += collect_submodules(pkg)
-    except Exception:
-        pass
+hiddenimports = sorted(set(
+    collect_submodules("psutil") + [
+        "psutil",
+        "psutil._psutil_windows",
+    ]
+))
 
-datas = []
-for rel in [
-    ("assets", "assets"),
-    ("ui/help_assets", "ui/help_assets"),
-]:
-    src = project / rel[0]
-    if src.exists():
-        datas.append((str(src), rel[1]))
+datas = collect_data_files("psutil")
+if assets_dir.exists():
+    datas.append((str(assets_dir), "assets"))
 
 a = Analysis(
-    [str(project / "app.py")],
-    pathex=[str(project)],
+    ["app.py"],
+    pathex=[str(project_root)],
     binaries=[],
     datas=datas,
     hiddenimports=hiddenimports,
@@ -32,7 +33,9 @@ a = Analysis(
     excludes=[],
     noarchive=False,
 )
+
 pyz = PYZ(a.pure)
+
 exe = EXE(
     pyz,
     a.scripts,
@@ -45,4 +48,11 @@ exe = EXE(
     strip=False,
     upx=False,
     console=False,
+    disable_windowed_traceback=False,
+    argv_emulation=False,
+    target_arch=None,
+    codesign_identity=None,
+    entitlements_file=None,
+    icon=str(assets_dir / "fixmate_logo.ico")
+        if (assets_dir / "fixmate_logo.ico").exists() else None,
 )
