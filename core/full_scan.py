@@ -26,19 +26,18 @@ if PROJECT_ROOT not in sys.path:
 # CORE MODULES
 # ============================================================
 
-from system_info import get_system_info
-from hardware import get_hardware_info
-from diagnostics import run_diagnostics
-from process_analyzer_v3 import analyze_processes
-from gpu_diagnostics import run_gpu_diagnostic
-from thermal import run_thermal_diagnostic
-from storage_diagnostics import get_storage_diagnostic
+from core.system_info import get_system_info
+from core.hardware import get_hardware_info
+from core.diagnostics import run_diagnostics
+from core.process_analyzer_v3 import analyze_processes
+from core.gpu_diagnostics import run_gpu_diagnostic
+from core.thermal import run_thermal_diagnostic
+from core.storage_diagnostics import get_storage_diagnostic
 
-from battery_diagnosis import (
+from core.battery_diagnosis import (
     diagnose_battery,
     print_battery_report
 )
-
 
 # ============================================================
 # DRIVER DIAGNOSTICS

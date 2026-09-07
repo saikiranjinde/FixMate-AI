@@ -14,6 +14,20 @@ hiddenimports = sorted(set(
     collect_submodules("psutil") + [
         "psutil",
         "psutil._psutil_windows",
+        "hardware",
+        "core.hardware",
+        "diagnosis",
+        "core.diagnosis",
+        "process_analyzer_v3",
+        "core.process_analyzer_v3",
+        "gpu_diagnostics",
+        "core.gpu_diagnostics",
+        "thermal",
+        "core.thermal",
+        "storage_diagnostics",
+        "core.storage_diagnostics",
+
+
     ]
 ))
 
